@@ -66,7 +66,7 @@ main(!IO) :-
 
 %----------------------------------------------------------------------------%
 
-    % Watch a bunch of files for any changes to then.
+    % Watch a bunch of files for any changes to them.
     % Stats is the initial set of statinfo() records, we ask for them again
     % in the same order, and if any are changed, we update the list and return
     % an indicator of a change.
