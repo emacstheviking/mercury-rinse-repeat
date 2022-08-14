@@ -56,10 +56,12 @@ main(!IO) :-
             Sres = yes(Stats),
             watch_files(Rinser, Files, Stats, !IO)
         ;
-            Sres = no
+            Sres = no,
+            io.format("Oops! Did all these files exist?\n", [], !IO),
+            io.set_exit_status(1, !IO)
         )
     else
-        true
+        io.format("Usage :- rr COMMAND FILES\n", [], !IO)
     ).
 
 %----------------------------------------------------------------------------%
@@ -154,10 +156,13 @@ show_statinfo(S, !IO) :-
 statfiles(Files, Out, !IO) :-
     P = (pred(F::in, !.OK::in, !:OK::out, !.IO::di, !:IO::uo) is det :-
         filestat(F, Res, !IO),
-        ( if Res = ok(Stat) then
+        (
+            Res = io.ok(Stat),
             cons(Stat, !OK)
-        else
-            true
+        ;
+            Res = io.error(Error),
+            io.format("File error: %s: %s\n",
+                [s(io.error_message(Error)), s(F)], !IO)
         )
     ),
     list.foldl2(P, Files, [], Stats, !IO),
