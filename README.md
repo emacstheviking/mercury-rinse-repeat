@@ -62,10 +62,10 @@ commands. It won't stop `rr` from running.
 
 ## Using with a literate programming tool
 
-    $ rr "mlpt \"-U *:../gfx.m\"" gfx.m
+    $ rr "mlpt \"-U *:../gfx.m\"" gfx.md
 
 Note the double escaping of the strings. The `mlpt` command says that it
-should process the file called `gfx.m`, render out the code to the file called
+should process the file called `gfx.md`, render out the code to the file called
 `../gfx.m` and start from the root element called "*".
 
 
