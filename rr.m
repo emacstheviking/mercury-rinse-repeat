@@ -26,6 +26,8 @@
 %
 % rr does all of that for me so all I need to do is sit and think and work!
 %
+% Changed: 23 Sep 2023 07:27:08 BST -- use nanosleep().
+%
 %-----------------------------------------------------------------------------%
 :- module rr.
 
@@ -77,17 +79,21 @@ main(!IO) :-
     io::di, io::uo) is det.
 
 watch_files(Command, Files, Stats, !IO) :-
-    usleep(100000, !IO), % 0.1 sec, CPU respect!!
+    % M1 mac-mini: averages 0.0 to 0.1% CPU time but feels 'responsive'.
+    nanosleep(1200000, !IO),
     statfiles(Files, Sres, !IO),
     (
         Sres = yes(NewStats),
         check_changes(Stats, NewStats, Changed, !IO),
-        ( if  Changed = yes then
-            io.format(">> %s", [s(Command)], !IO),
+        ( if list.is_not_empty(Changed) then
+            io.format("\nrr --> ", [], !IO),
+            io.write_list(Changed, ", ", io.print, !IO),
+            io.format("\nrr --> ""%s""\n\n", [s(Command)], !IO),
             io.flush_output(!IO),
             io.call_system(Command, _, !IO),
-            io.format(" *OK*\n", [], !IO),
-            %show_changes(Stats, NewStats, !IO),
+            io.format("\nrr --> OK\n", [], !IO),
+            %> uncomment for detailed debugging.
+            % show_changes(Stats, NewStats, !IO),
             watch_files(Command, Files, NewStats, !IO)
         else
             watch_files(Command, Files, Stats, !IO)
@@ -99,13 +105,15 @@ watch_files(Command, Files, Stats, !IO) :-
 
 %----------------------------------------------------------------------------%
 
-    % Check for change on 'mtime' only!
+    % Check for change based only on 'mtime' values.
     %
-:- pred check_changes(list(statinfo)::in, list(statinfo)::in, bool::out,
-    io::di, io::uo) is det.
+:- pred check_changes(list(statinfo)::in, list(statinfo)::in,
+    list(string)::out, io::di, io::uo) is det.
 
 check_changes(Old, New, Changed, !IO) :-
-    Check = (pred(Pair::in, !.Ch::in, !:Ch::out, !.IO::di, !:IO::uo) is det :-
+    Check = (pred(
+        Pair::in, !.Ch::in, !:Ch::out, !.IO::di, !:IO::uo
+    ) is det :-
         Pair0 = list.det_index0(Pair, 0),
         Pair1 = list.det_index0(Pair, 1),
         Mtime0 = si_mtime(Pair0),
@@ -113,11 +121,10 @@ check_changes(Old, New, Changed, !IO) :-
         ( if Mtime0 = Mtime1 then
             true
         else
-            !:Ch = yes,
-            io.format(">> %s\n", [s(si_file(Pair0))], !IO)
+            list.cons(si_file(Pair0), !Ch)
         )
     ),
-    list.foldl2(Check, list.chunk(list.zip(Old, New), 2), no, Changed, !IO).
+    list.foldl2(Check, list.chunk(list.zip(Old, New), 2), [], Changed, !IO).
 
 %----------------------------------------------------------------------------%
 
@@ -295,10 +302,10 @@ make_response(File, Size, ATime, MTime, CTime)
     % This is used to give the CPU a break between rounds of the scanning
     % loop whilst looking for changes.
     %
-:- pred usleep(int::in, io::di, io::uo) is det.
+:- pred nanosleep(int::in, io::di, io::uo) is det.
 
 :- pragma foreign_proc(
-    "C", usleep(MicroSecs::in, _IO0::di, _IO::uo),
+    "C", nanosleep(NanoSecs::in, _IO0::di, _IO::uo),
     [   promise_pure
     ,   thread_safe
     ,   will_not_throw_exception
@@ -307,7 +314,10 @@ make_response(File, Size, ATime, MTime, CTime)
     ,   tabled_for_io
     ],
     "
-    usleep(MicroSecs);
+    int secs = NanoSecs / 1000000;
+    int nsecs = NanoSecs - ( secs * 1000000 );
+    struct timespec speci = { secs, nsecs };
+    nanosleep(&speci, NULL);
     "
 ).
 
