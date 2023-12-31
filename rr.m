@@ -100,7 +100,8 @@ watch_files(Command, Files, Stats, !IO) :-
         )
     ;
         Sres = no,
-        io.format("Ending, something went wrong!\n", [], !IO)
+        io.format("\nrr --> resume: something went wrong!\n", [], !IO),
+	watch_files(Command, Files, Stats, !IO)
     ).    
 
 %----------------------------------------------------------------------------%
@@ -226,7 +227,7 @@ make_error(E, Why) = Out :-
     = (date::out) is det.
 
 to_date(Yr, Mo, Dy, Hr, Mi, Se) = Date :-
-    Month = calendar.det_int_to_month(Mo),
+    Month = calendar.det_int0_to_month(Mo),
     Date = calendar.det_init_date(Yr, Month, Dy, Hr, Mi, Se, 0).
 
 :- pragma foreign_export("C", to_date(in, in, in, in, in, in)
