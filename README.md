@@ -6,9 +6,17 @@ decided that what I needed was something utterly simple, that doesn't grind
 the CPU and that just does what it says on the tin, I offer `rr`. Rinse,
 repeat.
 
+## Building
+
+    mmc --make rr
+    cp ./rr ~/.bin
+
+The second step works for me on a Mac, but basically do what you need to do to
+make sure that the executable is on your OS path.
+
 Once installed and on your OS path, all you do is:
 
-    $ rr "command-to-run" list-of-files-to-trigger-a-change
+    rr "command-to-run" list-of-files-to-trigger-a-change
 
 The list can include wildcards, but I am relying on the operating system to
 expand that list prior to beginning execution i.e. the code itself does not do
